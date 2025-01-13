@@ -11,8 +11,8 @@
 #define MAX_SSID_LEN 32
 #define MAX_PASS_LEN 64
 
-#define USB_TIMEOUT 1000  // Timeout for USB operations in milliseconds
-#define USB_TRANSFER_TYPE_BULK 0x02  // Bulk transfer type
+#define USB_TIMEOUT 1000 // timeout after one second of no response from the USB device
+#define USB_TRANSFER_TYPE_BULK 0x02 // definition of transfer type
 
 char ssids[MAX_NETWORKS][MAX_SSID_LEN];
 int network_count = 0;
@@ -28,7 +28,7 @@ void connect_wifi(const char *ssid, const char *password);
 char get_ascii_from_kb_data(void);
 usb_error_t usb_event_handler(usb_event_t event, void *event_data, void *callback_data);
 
-// Function to draw the "No USB device connected" screen
+//draw the "No USB device connected" screen
 void draw_no_device_screen() {
     gfx_FillScreen(gfx_white);
     gfx_SetTextFGColor(gfx_black);
@@ -38,7 +38,7 @@ void draw_no_device_screen() {
     dbg_printf("Displayed 'No USB device connected' screen\n");
 }
 
-// Function to draw the list of networks
+//draw the list of networks
 void draw_networks() {
     gfx_FillScreen(gfx_white);
     gfx_SetTextFGColor(gfx_black);
@@ -51,7 +51,7 @@ void draw_networks() {
     dbg_printf("Displayed network list\n");
 }
 
-// Function to draw the password input screen
+//draw the password input screen
 void draw_password_screen(const char *ssid, char *password) {
     gfx_FillScreen(gfx_white);
     gfx_SetTextFGColor(gfx_black);
@@ -66,7 +66,7 @@ void draw_password_screen(const char *ssid, char *password) {
     dbg_printf("Displayed password input screen for SSID: %s\n", ssid);
 }
 
-// Function to handle USB events
+//handling USB events
 usb_error_t usb_event_handler(usb_event_t event, void *event_data, void *callback_data) {
     dbg_printf("USB event: %d\n", event);
     if (event == USB_DEVICE_CONNECTED_EVENT) {
@@ -81,11 +81,11 @@ usb_error_t usb_event_handler(usb_event_t event, void *event_data, void *callbac
             usb_GetConfigurationDescriptor(device, 0, &config, sizeof(config), &transferred);
             usb_SetConfiguration(device, &config, transferred);
 
-            // Obtain the interface descriptor
+            //get the interface descriptor
             usb_interface_descriptor_t *interface_desc = (usb_interface_descriptor_t *)((uint8_t *)&config + config.bLength);
             usb_endpoint_descriptor_t *endpoint_desc = (usb_endpoint_descriptor_t *)((uint8_t *)interface_desc + interface_desc->bLength);
 
-            // Find and assign bulk IN and OUT endpoints
+            //find and assign bulk IN and OUT endpoints
             for (int i = 0; i < interface_desc->bNumEndpoints; i++, endpoint_desc = (usb_endpoint_descriptor_t *)((uint8_t *)endpoint_desc + endpoint_desc->bLength)) {
                 if ((endpoint_desc->bmAttributes & 0x03) == USB_TRANSFER_TYPE_BULK) {
                     if (endpoint_desc->bEndpointAddress & 0x80) {  // IN endpoint
@@ -105,13 +105,13 @@ usb_error_t usb_event_handler(usb_event_t event, void *event_data, void *callbac
     return USB_SUCCESS;
 }
 
-// Function to initialize USB
+//USB Initialization
 void init_usb() {
     usb_Init(usb_event_handler, NULL, NULL, USB_USE_OS_HEAP | USB_INIT_FLSZ_256 | USB_INIT_ASST_1 | USB_INIT_EOF1_3 | USB_INIT_EOF2_0);
     dbg_printf("USB initialized\n");
 }
 
-// Function to send command to Python script
+//sending commands to Python script
 void send_command(const char *command) {
     if (endpoint_out) {
         usb_ScheduleBulkTransfer(endpoint_out, (void *)command, strlen(command), NULL, NULL);
@@ -121,7 +121,7 @@ void send_command(const char *command) {
     }
 }
 
-// Function to receive response from Python script
+//receive responses from Python script
 void receive_response(char *response, size_t max_len) {
     size_t len = 0;
     while (len < max_len - 1) {
@@ -142,7 +142,7 @@ void receive_response(char *response, size_t max_len) {
     dbg_printf("Received response: %s\n", response);
 }
 
-// Function to scan for Wi-Fi networks
+//scan for Wi-Fi networks
 void scan_wifi(void) {
     send_command("SCAN");
     char response[1024];
@@ -157,7 +157,7 @@ void scan_wifi(void) {
     dbg_printf("Scanned %d networks\n", network_count);
 }
 
-// Function to connect to Wi-Fi network
+//connect to Wi-Fi network
 void connect_wifi(const char *ssid, const char *password) {
     char command[128];
     snprintf(command, sizeof(command), "CONNECT %s %s", ssid, password);
@@ -177,7 +177,7 @@ void connect_wifi(const char *ssid, const char *password) {
     gfx_SwapDraw();
 }
 
-// Function to get ASCII character from keyboard data
+//get ASCII character from keyboard(keypad) data
 char get_ascii_from_kb_data(void) {
     kb_Scan();
 
@@ -315,15 +315,15 @@ int main(void) {
     while (true) {
         kb_Scan();
 
-        // Check if the Del key is pressed to quit the app
+        // del to esc
         if (kb_IsDown(kb_KeyDel)) {
             break;
         }
 
-        // Handle USB events once per loop iteration
+        // Handle USB events per loop iteration
         usb_HandleEvents();
 
-        // Check if a USB device is connected
+        // Checks if a USB device is connected
         if (device == NULL) {
             draw_no_device_screen();
         } else {
@@ -368,7 +368,7 @@ int main(void) {
                     while (timer < 5000) {
                         kb_Scan();
 
-                        // Check if the Del key is pressed to quit the app
+                        // more del to esc
                         if (kb_IsDown(kb_KeyDel)) {
                             gfx_End();
                             usb_Cleanup();
